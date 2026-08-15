@@ -250,8 +250,7 @@ Currently a **single always-on machine** (`min_machines_running = 1`, no
 Redis) — CoverLetterer's Reflex state is in-memory, which is fine at this
 traffic level, and there's no persistent volume (resume PDFs live in Tigris).
 
-To scale the backend to multiple machines later, mirror `~/web/reflex`'s
-recipe: provision Redis (`fly redis create`, set `REDIS_URL`) so Reflex
-switches to its Redis-backed state manager, then `fly scale count N --app
-coverletterer-backend`. Not needed yet — this is a pointer for later, not
-part of the current deploy.
+To scale the backend to multiple machines later: provision Redis 
+(`fly redis create`, set `REDIS_URL`) so Reflex switches to its Redis-backed 
+state manager, then `fly scale count N --app coverletterer-backend`. 
+Not needed yet — this is a pointer for later, not part of the current deploy.

@@ -28,8 +28,7 @@ primary_region = "syd"
   internal_port = 8000
   force_https = true
   # Single always-on machine (no Redis / no shared state yet): fine at this
-  # traffic level. Horizontal scaling later needs Redis + REDIS_URL, same
-  # recipe as ~/web/reflex.
+  # traffic level. Horizontal scaling later needs Redis + REDIS_URL.
   auto_stop_machines = true
   auto_start_machines = true
   min_machines_running = 1
@@ -37,6 +36,5 @@ primary_region = "syd"
 [[vm]]
   size = "shared-cpu-1x"
   # Headroom for an occasional headless-Chromium fallback fetch (Indeed/
-  # LinkedIn/resume-URL scraping) alongside the Python process. No
-  # Whisper/moviepy here, so well under the reference project's 4gb.
+  # LinkedIn/resume-URL scraping) alongside the Python process.
   memory = "2gb"
