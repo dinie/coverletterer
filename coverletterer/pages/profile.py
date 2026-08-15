@@ -95,7 +95,98 @@ def profile_page() -> rx.Component:
                     ProfileState.error, icon="triangle_alert", color_scheme="red"
                 ),
             ),
+            rx.divider(),
+            _extension_access_card(),
             spacing="4",
             width="100%",
         )
+    )
+
+
+def _extension_access_card() -> rx.Component:
+    return rx.card(
+        rx.vstack(
+            rx.heading("Extension access", size="4"),
+            rx.text(
+                "Generate a personal token for the CoverLetterer browser "
+                "extension, so it can create job applications on your behalf.",
+                color_scheme="gray",
+                size="2",
+            ),
+            rx.cond(
+                ProfileState.token_value != "",
+                rx.vstack(
+                    rx.callout(
+                        "Copy this now — you won't be able to see it again.",
+                        icon="triangle_alert",
+                        color_scheme="amber",
+                    ),
+                    rx.hstack(
+                        rx.code(ProfileState.token_value, size="2"),
+                        rx.button(
+                            rx.icon("copy", size=14),
+                            "Copy",
+                            on_click=rx.set_clipboard(ProfileState.token_value),
+                            size="2",
+                            variant="soft",
+                        ),
+                        align="center",
+                        spacing="2",
+                    ),
+                    rx.button(
+                        "Done",
+                        on_click=ProfileState.dismiss_token_value,
+                        size="2",
+                        variant="soft",
+                    ),
+                    spacing="3",
+                    width="100%",
+                    align="start",
+                ),
+                rx.vstack(
+                    rx.cond(
+                        ProfileState.token_exists,
+                        rx.hstack(
+                            rx.badge("Token active", color_scheme="green"),
+                            rx.text(
+                                "Created " + ProfileState.token_created_at,
+                                size="1",
+                                color_scheme="gray",
+                            ),
+                            align="center",
+                            spacing="2",
+                        ),
+                    ),
+                    rx.hstack(
+                        rx.button(
+                            rx.cond(
+                                ProfileState.token_exists,
+                                "Regenerate token",
+                                "Generate token",
+                            ),
+                            on_click=ProfileState.generate_token,
+                            size="2",
+                        ),
+                        rx.cond(
+                            ProfileState.token_exists,
+                            rx.button(
+                                "Revoke",
+                                on_click=ProfileState.revoke_token,
+                                size="2",
+                                variant="soft",
+                                color_scheme="red",
+                            ),
+                        ),
+                        spacing="3",
+                    ),
+                    spacing="3",
+                    width="100%",
+                    align="start",
+                ),
+            ),
+            spacing="3",
+            width="100%",
+            align="start",
+        ),
+        width="100%",
     )

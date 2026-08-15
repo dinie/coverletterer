@@ -6,9 +6,9 @@ import reflex as rx
 from reflex.utils.misc import run_in_thread
 from sqlmodel import select
 
-from .. import job_sources
-from ..models import CoverLetterDraft, JobApplication, Resume, Status
+from ..models import CoverLetterDraft, JobApplication, Resume
 from ..schemas import ApplicationVM
+from ..services import application_ingest
 from .base import AppState
 from .draft_state import DraftState
 
@@ -122,28 +122,15 @@ class ApplicationsState(AppState):
             self.creating = True
             self.create_error = ""
 
-        site = job_sources.detect_site(url)
-
-        def _create_row() -> int:
-            with rx.session() as session:
-                app = JobApplication(
-                    user_id=user_id,
-                    source_url=url,
-                    site=site,
-                    status=Status.PARSING,
-                )
-                session.add(app)
-                session.commit()
-                session.refresh(app)
-                return app.id
-
-        application_id = await run_in_thread(_create_row)
+        app, _created = await run_in_thread(
+            lambda: application_ingest.get_or_create(user_id, url)
+        )
 
         async with self:
             self.creating = False
             self.new_url = ""
 
         yield [
-            rx.redirect(f"/application/{application_id}"),
-            DraftState.parse_job_ad(application_id),
+            rx.redirect(f"/application/{app.id}"),
+            DraftState.parse_job_ad(app.id),
         ]

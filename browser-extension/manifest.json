@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "CoverLetterer Capture",
+  "version": "1.0.0",
+  "description": "Send the current job ad to CoverLetterer with one click.",
+  "action": {
+    "default_title": "Add this job to CoverLetterer"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "options_page": "options.html",
+  "permissions": ["activeTab", "scripting", "storage"],
+  "host_permissions": [
+    "http://localhost:8000/*",
+    "https://coverletterer-backend.fly.dev/*"
+  ]
+}

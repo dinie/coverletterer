@@ -86,6 +86,19 @@ class CoverLetterDraft(rx.Model, table=True):
     updated_at: datetime.datetime = sqlmodel.Field(default_factory=_utcnow)
 
 
+class ApiToken(rx.Model, table=True):
+    """A personal access token for the browser extension.
+
+    Only the SHA-256 hash is persisted; the raw token is shown to the user
+    once, at generation time. At most one row per user — regenerating
+    upserts in place, invalidating the previous token.
+    """
+
+    user_id: int = sqlmodel.Field(foreign_key="localuser.id", index=True, unique=True)
+    token_hash: str = sqlmodel.Field(index=True)
+    created_at: datetime.datetime = sqlmodel.Field(default_factory=_utcnow)
+
+
 class MagicLinkToken(rx.Model, table=True):
     """A single-use, short-lived token backing a passwordless email sign-in.
 

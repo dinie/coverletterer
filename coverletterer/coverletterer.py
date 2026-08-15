@@ -9,7 +9,7 @@ the resume + description -> the user edits, saves, and exports drafts as PDF.
 import reflex as rx
 import reflex_local_auth
 
-from . import auth_routes, models  # noqa: F401  (models registers tables)
+from . import api_routes, auth_routes, models  # noqa: F401  (models registers tables)
 from .pages.application import application_page
 from .pages.auth_pages import auth_complete_page, login_page
 from .pages.index import index
@@ -24,7 +24,12 @@ app = rx.App()
 
 # Application pages (all gated by our require_login wrapper in components/auth.py).
 app.add_page(index, route="/", title="Dashboard", on_load=ApplicationsState.load_applications)
-app.add_page(profile_page, route="/profile", title="Resume", on_load=ProfileState.load_resume)
+app.add_page(
+    profile_page,
+    route="/profile",
+    title="Resume",
+    on_load=[ProfileState.load_resume, ProfileState.load_token_status],
+)
 app.add_page(new_application_page, route="/new", title="New Application")
 app.add_page(
     application_page,
@@ -54,3 +59,6 @@ app.add_page(
 
 # Backend (Starlette) route for the magic-link verify flow.
 auth_routes.register(app)
+
+# Backend (Starlette) API routes for the browser extension.
+api_routes.register(app)

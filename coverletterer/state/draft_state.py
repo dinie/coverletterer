@@ -9,10 +9,9 @@ import reflex as rx
 from reflex.utils.misc import run_in_thread
 from sqlmodel import select
 
-from .. import job_sources
 from ..models import CoverLetterDraft, JobApplication, Resume, Status
 from ..schemas import DraftVM, ResumeVM
-from ..services import cover_letter, pdf_export, resume_ingest
+from ..services import application_ingest, cover_letter, pdf_export, resume_ingest
 from .base import AppState
 
 
@@ -65,16 +64,6 @@ def _query_drafts(application_id: int) -> list[DraftVM]:
         )
         for d in rows
     ]
-
-
-def _mark_status(application_id: int, status: str, error: str = "") -> None:
-    with rx.session() as session:
-        app = session.get(JobApplication, application_id)
-        if app is not None:
-            app.status = status
-            app.error = error
-            session.add(app)
-            session.commit()
 
 
 class DraftState(AppState):
@@ -147,48 +136,18 @@ class DraftState(AppState):
 
     @rx.event(background=True)
     async def parse_job_ad(self, application_id: int):
-        with rx.session() as session:
-            app = session.get(JobApplication, application_id)
-            if app is None:
-                return
-            source_url = app.source_url
-
-        try:
-            posting = await run_in_thread(
-                lambda: job_sources.fetch_job_posting(source_url)
-            )
-        except job_sources.JobParseError as e:
-            _mark_status(application_id, Status.NEEDS_MANUAL_PASTE, str(e))
-            async with self:
-                if self.application_id_loaded == application_id:
-                    self.status = Status.NEEDS_MANUAL_PASTE
-                    self.error = str(e)
+        app = await run_in_thread(
+            lambda: application_ingest.parse_and_persist(application_id)
+        )
+        if app is None:
             return
-        except Exception as e:  # noqa: BLE001
-            _mark_status(application_id, Status.ERROR, str(e))
-            async with self:
-                if self.application_id_loaded == application_id:
-                    self.status = Status.ERROR
-                    self.error = str(e)
-            return
-
-        with rx.session() as session:
-            app = session.get(JobApplication, application_id)
-            app.job_title = posting.title
-            app.company = posting.company
-            app.job_description = posting.description
-            app.status = Status.PARSED
-            app.error = None
-            session.add(app)
-            session.commit()
-
         async with self:
             if self.application_id_loaded == application_id:
-                self.job_title = posting.title
-                self.company = posting.company
-                self.job_description = posting.description
-                self.status = Status.PARSED
-                self.error = ""
+                self.job_title = app.job_title
+                self.company = app.company
+                self.job_description = app.job_description
+                self.status = app.status
+                self.error = app.error or ""
 
     # ---- manual paste fallback / editing the parsed job details ----
 

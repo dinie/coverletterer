@@ -7,7 +7,7 @@ from reflex.utils.misc import run_in_thread
 
 from ..models import Resume
 from ..schemas import ResumeVM
-from ..services import resume_ingest
+from ..services import api_tokens, resume_ingest
 from .base import AppState
 
 
@@ -38,10 +38,40 @@ class ProfileState(AppState):
     saving: bool = False
     error: str = ""
 
+    # Browser-extension personal access token.
+    token_exists: bool = False
+    token_created_at: str = ""
+    token_value: str = ""  # only set right after generate(); never reloaded
+
     @rx.event
     def load_resume(self):
         self.error = ""
         self.resume = _resume_vm(resume_ingest.get_effective_resume(self.user_id, None))
+
+    @rx.event
+    def load_token_status(self):
+        self.token_value = ""
+        self.token_exists = api_tokens.exists(self.user_id)
+        created = api_tokens.created_at(self.user_id)
+        self.token_created_at = created.strftime("%Y-%m-%d %H:%M") if created else ""
+
+    @rx.event
+    def generate_token(self):
+        self.token_value = api_tokens.generate(self.user_id)
+        self.token_exists = True
+        created = api_tokens.created_at(self.user_id)
+        self.token_created_at = created.strftime("%Y-%m-%d %H:%M") if created else ""
+
+    @rx.event
+    def dismiss_token_value(self):
+        self.token_value = ""
+
+    @rx.event
+    def revoke_token(self):
+        api_tokens.revoke(self.user_id)
+        self.token_exists = False
+        self.token_created_at = ""
+        self.token_value = ""
 
     @rx.event
     def set_url_input(self, value: str):
