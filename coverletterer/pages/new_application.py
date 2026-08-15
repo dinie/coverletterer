@@ -15,13 +15,13 @@ def new_application_page() -> rx.Component:
         rx.vstack(
             rx.heading("New application", size="7"),
             rx.text(
-                "Paste the URL of a job ad (SEEK, Indeed, or another site) and "
-                "we'll fetch and parse the description.",
+                "Paste the URL of a job ad (SEEK, Indeed, LinkedIn, or "
+                "another site) and we'll fetch and parse the description.",
                 color_scheme="gray",
             ),
             rx.hstack(
                 rx.input(
-                    placeholder="https://www.seek.com.au/job/...",
+                    placeholder="https://www.linkedin.com/jobs/view/...",
                     value=ApplicationsState.new_url,
                     on_change=ApplicationsState.set_new_url,
                     width="100%",

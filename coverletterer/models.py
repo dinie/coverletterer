@@ -32,7 +32,7 @@ class JobApplication(rx.Model, table=True):
 
     user_id: int = sqlmodel.Field(foreign_key="localuser.id", index=True)
     source_url: str
-    site: str = "other"  # "seek" | "indeed" | "other"
+    site: str = "other"  # "seek" | "indeed" | "linkedin" | "other"
     job_title: str = ""
     company: str = ""
     job_description: str = sqlmodel.Field(

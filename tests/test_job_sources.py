@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from coverletterer.job_sources import detect_site, generic, indeed, seek
+from coverletterer.job_sources import detect_site, generic, indeed, linkedin, seek
 from coverletterer.job_sources.base import JobParseError
 
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -40,6 +40,19 @@ def test_indeed_parse_raises_on_unrelated_html():
         indeed.parse("<html><body><p>nothing here</p></body></html>")
 
 
+def test_linkedin_parse_extracts_job_fields():
+    posting = linkedin.parse(_read("linkedin_job.html"))
+    assert posting.site == "linkedin"
+    assert "Senior Software Engineer" in posting.title
+    assert posting.company == "Heidi"
+    assert len(posting.description) > 500
+
+
+def test_linkedin_parse_raises_on_unrelated_html():
+    with pytest.raises(JobParseError):
+        linkedin.parse("<html><body><p>nothing here</p></body></html>")
+
+
 def test_generic_extract_text_strips_chrome():
     html = """
     <html><body>
@@ -67,6 +80,7 @@ def test_generic_parse_raises_on_empty_page():
         ("https://au.seek.com/job/93856863", "seek"),
         ("https://seek.com/job/123", "seek"),
         ("https://au.indeed.com/viewjob?jk=abc", "indeed"),
+        ("https://www.linkedin.com/jobs/view/4411867124/", "linkedin"),
         ("https://example.com/careers/some-role", "other"),
     ],
 )

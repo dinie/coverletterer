@@ -12,12 +12,13 @@ from urllib.parse import urlparse
 import httpx
 
 from ..services.browser_fetch import BrowserFetchError, fetch_rendered_html
-from . import generic, indeed, seek
+from . import generic, indeed, linkedin, seek
 from .base import JobParseError, JobPosting
 
 _PARSERS_BY_DOMAIN = {
     "seek.com": seek,
     "indeed.com": indeed,
+    "linkedin.com": linkedin,
 }
 
 _USER_AGENT = (
