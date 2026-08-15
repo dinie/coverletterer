@@ -1,0 +1,42 @@
+# Web/backend tier — Reflex Python backend. App name/region are also set by
+# deploy.sh; keep these in sync if you change the PREFIX/REGION there.
+app = "coverletterer-backend"
+primary_region = "syd"
+
+[build]
+  dockerfile = "Dockerfile.backend"
+
+[env]
+  # URLs / CORS so the separate frontend can reach the backend. These fly.dev
+  # values are the FALLBACK for a bare `fly deploy`. deploy.sh overrides them
+  # via --env when FRONTEND_DOMAIN/BACKEND_DOMAIN are set (custom domains +
+  # multi-origin CORS).
+  REFLEX_API_URL = "https://coverletterer-backend.fly.dev"
+  REFLEX_DEPLOY_URL = "https://coverletterer-frontend.fly.dev"
+  REFLEX_CORS_ALLOWED_ORIGINS = "https://coverletterer-frontend.fly.dev"
+  BACKEND_URL = "https://coverletterer-backend.fly.dev"
+  FRONTEND_URL = "https://coverletterer-frontend.fly.dev"
+
+# Secrets set via `fly secrets set` (see deploy.sh): ANTHROPIC_API_KEY,
+# SMTP_HOSTNAME/SMTP_USERNAME/SMTP_PASSWORD (+ optional SMTP_PORT/SMTP_FROM/
+# SMTP_STARTTLS), DATABASE_URL (a Supabase connection string — YOU set this in
+# .env; deploy.sh only validates + stages it, it never provisions a database),
+# and AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY/AWS_ENDPOINT_URL_S3/BUCKET_NAME
+# (via `fly storage create` — Tigris).
+
+[http_service]
+  internal_port = 8000
+  force_https = true
+  # Single always-on machine (no Redis / no shared state yet): fine at this
+  # traffic level. Horizontal scaling later needs Redis + REDIS_URL, same
+  # recipe as ~/web/reflex.
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 1
+
+[[vm]]
+  size = "shared-cpu-1x"
+  # Headroom for an occasional headless-Chromium fallback fetch (Indeed/
+  # LinkedIn/resume-URL scraping) alongside the Python process. No
+  # Whisper/moviepy here, so well under the reference project's 4gb.
+  memory = "2gb"

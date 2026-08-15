@@ -1,0 +1,43 @@
+# Reflex backend (web/server tier): Python app run as `reflex run --backend-only`.
+FROM python:3.12-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    REFLEX_ENV_MODE=prod \
+    REFLEX_TELEMETRY_ENABLED=false \
+    UV_PROJECT_ENVIRONMENT=/app/.venv
+
+WORKDIR /app
+
+# System deps:
+#  - Node 22: reflex needs it to compile the app
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        ca-certificates curl gnupg unzip \
+ && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \
+ && apt-get install -y --no-install-recommends nodejs \
+ && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --no-cache-dir uv
+
+# Dependencies first (cached layer).
+COPY pyproject.toml uv.lock ./
+RUN uv sync --frozen --no-dev --no-install-project
+
+# Headless Chromium: the fallback fetch used when a job board blocks a direct
+# HTTP request (confirmed necessary for Indeed) and for resume-URL ingestion.
+# --with-deps pulls in Chromium's apt dependencies on this Debian base — this
+# is the main reason this image is bigger/slower to build than a typical
+# Reflex app image.
+RUN uv run --no-sync playwright install --with-deps chromium
+
+# Application source.
+COPY rxconfig.py alembic.ini entrypoint.sh ./
+COPY coverletterer ./coverletterer
+COPY alembic ./alembic
+COPY scripts ./scripts
+RUN chmod +x entrypoint.sh
+
+# Pre-compile the app at build time so container start doesn't recompile.
+RUN uv run --no-sync reflex export --backend-only --no-zip
+
+EXPOSE 8000
+ENTRYPOINT ["./entrypoint.sh"]
