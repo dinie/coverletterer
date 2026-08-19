@@ -39,5 +39,12 @@ RUN chmod +x entrypoint.sh
 # Pre-compile the app at build time so container start doesn't recompile.
 RUN uv run --no-sync reflex export --backend-only --no-zip
 
+# The SPA shell (frontend_routes.py's fallback for client-side page routes).
+# deploy.sh stages this fresh from `reflex export --frontend-only` on every
+# deploy — see DEPLOY.md "Static assets (Tigris)". The hashed JS/CSS bundle
+# itself is NOT baked into this image; it's uploaded to Tigris and served by
+# Fly's proxy directly via the [[statics]] block in fly.backend.toml.
+COPY static_shell ./static_shell
+
 EXPOSE 8000
 ENTRYPOINT ["./entrypoint.sh"]

@@ -9,7 +9,7 @@ the resume + description -> the user edits, saves, and exports drafts as PDF.
 import reflex as rx
 import reflex_local_auth
 
-from . import api_routes, auth_routes, models  # noqa: F401  (models registers tables)
+from . import api_routes, auth_routes, frontend_routes, models  # noqa: F401  (models registers tables)
 from .pages.application import application_page
 from .pages.auth_pages import auth_complete_page, login_page
 from .pages.index import index
@@ -62,3 +62,7 @@ auth_routes.register(app)
 
 # Backend (Starlette) API routes for the browser extension.
 api_routes.register(app)
+
+# SPA-shell fallback for client-side page routes (last-resort default; see
+# frontend_routes.py for why this isn't a normal registered route).
+frontend_routes.register(app)

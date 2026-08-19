@@ -1,5 +1,8 @@
-# Web/backend tier — Reflex Python backend. App name/region are also set by
-# deploy.sh; keep these in sync if you change the PREFIX/REGION there.
+# The only Fly app: Reflex backend (websocket/event API + our /api, /auth
+# routes) AND the frontend's SPA shell (frontend_routes.py). The hashed JS/CSS
+# bundle itself is served straight from Tigris by Fly's proxy via [[statics]]
+# below — bypassing this app entirely for those requests. App name/region are
+# also set by deploy.sh; keep these in sync if you change PREFIX/REGION there.
 app = "coverletterer-backend"
 primary_region = "syd"
 
@@ -7,22 +10,34 @@ primary_region = "syd"
   dockerfile = "Dockerfile.backend"
 
 [env]
-  # URLs / CORS so the separate frontend can reach the backend. These fly.dev
-  # values are the FALLBACK for a bare `fly deploy`. deploy.sh overrides them
-  # via --env when FRONTEND_DOMAIN/BACKEND_DOMAIN are set (custom domains +
-  # multi-origin CORS).
+  # Frontend and backend are now the same origin, so REFLEX_API_URL (the
+  # SPA's data origin) and REFLEX_DEPLOY_URL (the public app URL) are the
+  # same value. This fly.dev value is the FALLBACK for a bare `fly deploy`;
+  # deploy.sh overrides it via --env when APP_DOMAIN is set (custom domain).
   REFLEX_API_URL = "https://coverletterer-backend.fly.dev"
-  REFLEX_DEPLOY_URL = "https://coverletterer-frontend.fly.dev"
-  REFLEX_CORS_ALLOWED_ORIGINS = "https://coverletterer-frontend.fly.dev"
+  REFLEX_DEPLOY_URL = "https://coverletterer-backend.fly.dev"
+  REFLEX_CORS_ALLOWED_ORIGINS = "https://coverletterer-backend.fly.dev"
   BACKEND_URL = "https://coverletterer-backend.fly.dev"
-  FRONTEND_URL = "https://coverletterer-frontend.fly.dev"
+  FRONTEND_URL = "https://coverletterer-backend.fly.dev"
+
+# Serve the hashed JS/CSS bundle straight from Tigris — deploy.sh uploads it
+# (via scripts/upload_static_assets.py) before each deploy; see DEPLOY.md
+# "Static assets (Tigris)". Reflex's own build already puts every hashed
+# chunk under /assets/, so this maps 1:1 with no rewriting needed. Note: Fly
+# does not let [[statics]] set Cache-Control or any other response headers.
+[[statics]]
+  guest_path = "/assets"
+  url_prefix = "/assets"
+  tigris_bucket = "coverletterer-frontend"
 
 # Secrets set via `fly secrets set` (see deploy.sh): ANTHROPIC_API_KEY,
 # SMTP_HOSTNAME/SMTP_USERNAME/SMTP_PASSWORD (+ optional SMTP_PORT/SMTP_FROM/
 # SMTP_STARTTLS), DATABASE_URL (a Supabase connection string — YOU set this in
 # .env; deploy.sh only validates + stages it, it never provisions a database),
 # and AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY/AWS_ENDPOINT_URL_S3/BUCKET_NAME
-# (via `fly storage create` — Tigris).
+# (via `fly storage create` — Tigris, the private resume-PDF bucket; the
+# frontend's own Tigris bucket/credentials are deploy-time-only, not app
+# secrets — see DEPLOY.md).
 
 [http_service]
   internal_port = 8000
