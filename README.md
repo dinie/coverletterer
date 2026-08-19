@@ -60,7 +60,8 @@ breaks doesn't touch the others.
   authenticated with a personal access token (see
   [`browser-extension/README.md`](browser-extension/README.md)).
 - **Tests** — a `pytest` suite for the core logic.
-- **Deployable** — 3-tier Fly.io setup with a Supabase-hosted database (see
+- **Deployable** — a single Fly.io app (Reflex backend + SPA shell), static
+  assets served straight from Tigris, and a Supabase-hosted database (see
   [DEPLOY.md](DEPLOY.md)).
 
 ---
@@ -76,7 +77,7 @@ breaks doesn't touch the others.
 | PDF export | `reportlab` |
 | Auth | `reflex-local-auth` + magic-link (SMTP) |
 | Database | SQLite (dev) / PostgreSQL via SQLModel + Alembic (prod — Supabase) |
-| Object storage | S3-compatible: MinIO (dev) / Tigris (prod) |
+| Object storage | S3-compatible: MinIO (dev) / Tigris (prod) — resume PDFs (private) + static assets (public, via Fly `[[statics]]`) |
 | Browser extension | Manifest V3, personal-access-token auth |
 | Packaging | `uv` |
 
@@ -170,6 +171,7 @@ coverletterer/
 ├── schemas.py                # typed view-models for the UI
 ├── auth_routes.py             # Starlette route: magic-link verify
 ├── api_routes.py               # Starlette routes: browser-extension API
+├── frontend_routes.py           # SPA-shell fallback for client-side routes
 ├── job_sources/                 # pluggable per-site job-ad parsers
 │   ├── seek.py, indeed.py, linkedin.py, generic.py
 │   └── __init__.py                # fetch_job_posting() dispatcher
@@ -186,7 +188,8 @@ coverletterer/
 alembic/                     # DB migrations
 tests/                       # pytest suite
 browser-extension/           # Manifest V3 Chrome extension
-Dockerfile.* / fly.*.toml / deploy.sh / DEPLOY.md   # Fly.io deployment
+scripts/                     # create_qa_user.py, upload_static_assets.py
+Dockerfile.backend / fly.backend.toml / deploy.sh / DEPLOY.md   # Fly.io deployment
 ```
 
 ---
@@ -207,18 +210,20 @@ the create/parse logic shared by the web UI and the browser extension.
 
 ## Deployment
 
-A 3-tier Fly.io deployment (static frontend + Reflex backend + **Supabase**
-Postgres) is fully scripted. See **[DEPLOY.md](DEPLOY.md)** — TL;DR:
+A single-Fly-app deployment (Reflex backend + SPA shell, static assets
+served straight from **Tigris** via `[[statics]]`, database on **Supabase**)
+is fully scripted. See **[DEPLOY.md](DEPLOY.md)** — TL;DR:
 
 ```bash
 fly auth login
 ./deploy.sh
 ```
 
-`deploy.sh` **requires `DATABASE_URL`** (a Supabase connection string) to
-already be set in `.env` — it never provisions a database itself, and exits
-with setup instructions if it's missing. Custom domains are supported via
-`FRONTEND_DOMAIN`/`BACKEND_DOMAIN`; see DEPLOY.md.
+`deploy.sh` **requires `DATABASE_URL`** (a Supabase connection string) and a
+**Tigris static-assets bucket's credentials** to already be set in `.env` —
+it never provisions either itself, and exits with setup instructions if
+they're missing. A custom domain is supported via `APP_DOMAIN`; see
+DEPLOY.md.
 
 ---
 
